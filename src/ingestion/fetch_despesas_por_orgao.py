@@ -1,0 +1,66 @@
+import os
+import time
+import requests
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+load_dotenv()
+
+API_BASE_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
+API_KEY = os.getenv("API_KEY")
+
+HEADERS = {
+    "chave-api-dados": API_KEY,
+    "accept": "application/json",
+    "User-Agent": "data-engineering-study"
+}
+
+def fetch_page(ano: int, orgao_superior: str, pagina: int):
+    url = f"{API_BASE_URL}/despesas/por-orgao"
+    params = {
+        "ano": ano,
+        "orgaoSuperior": orgao_superior,
+        "pagina": pagina
+    }
+
+    response = requests.get(
+        url,
+        headers=HEADERS,
+        params=params,
+        timeout=30
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def main():
+    ano = 2023
+    orgao_superior = "26000"  # ajuste com um código REAL
+    pagina = 1
+    all_data = []
+
+    while True:
+        print(f"Ano {ano} | Órgão {orgao_superior} | Página {pagina}")
+        data = fetch_page(ano, orgao_superior, pagina)
+
+        if not data:
+            break
+
+        all_data.extend(data)
+        pagina += 1
+        time.sleep(0.3)
+
+    df = pd.DataFrame(all_data)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = f"data/raw/despesas_{orgao_superior}_{ano}_{timestamp}.csv"
+
+    df.to_csv(output_path, index=False, encoding="utf-8")
+
+    print(f"Arquivo salvo em {output_path}")
+    print(f"Registros: {len(df)}")
+
+
+if __name__ == "__main__":
+    main()
