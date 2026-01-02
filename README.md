@@ -87,6 +87,24 @@ Os dados utilizados são os mesmos disponibilizados publicamente no portal, aces
 
 ---
 
+## 🧭 Roteiro do Projeto (checkpoint)
+
+1) Escolher fonte de dados (API pública) — **Concluído:** Portal da Transparência (despesas/órgãos)  
+2) Ingestão Python: consumir API e salvar CSV local — **Concluído:** scripts em `src/ingestion`, saídas em `data/raw`  
+3) Camada staging: converter CSV → Parquet em caminho separado — **Concluído:** `src/transformation/stage_despesas_por_orgao.py` → `data/staging`  
+4) dbt + PostgreSQL local: criar fatos/dimensões via SQL — **Pendente**  
+5) Agregações SQL (GROUP BY, WINDOW) — **Pendente** (planejado no dbt)  
+6) Airflow: orquestrar pipeline, notificações e retry — **Pendente**  
+7) Visualização: conectar Metabase/Power BI ao PostgreSQL e criar dashboard — **Pendente**
+
+Próximos passos imediatos:
+- Iniciar projeto dbt em `dbt/`, definir profile apontando para PostgreSQL local.
+- Modelar staging e marts no dbt (fatos/dimensões) com testes declarativos.
+- Carregar Parquet em PostgreSQL e validar agregações SQL.
+- Preparar DAG no Airflow para orquestrar ingestão, staging, dbt e alertas.
+
+---
+
 ## ✅ O que já foi implementado
 
 - Estrutura de pastas organizada e versionada
