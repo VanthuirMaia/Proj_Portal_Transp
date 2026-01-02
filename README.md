@@ -89,15 +89,16 @@ Os dados utilizados são os mesmos disponibilizados publicamente no portal, aces
 
 ## 🧭 Roteiro do Projeto (checkpoint)
 
-1) Escolher fonte de dados (API pública) — **Concluído:** Portal da Transparência (despesas/órgãos)  
-2) Ingestão Python: consumir API e salvar CSV local — **Concluído:** scripts em `src/ingestion`, saídas em `data/raw`  
-3) Camada staging: converter CSV → Parquet em caminho separado — **Concluído:** `src/transformation/stage_despesas_por_orgao.py` → `data/staging`  
-4) dbt + PostgreSQL local: criar fatos/dimensões via SQL — **Pendente**  
-5) Agregações SQL (GROUP BY, WINDOW) — **Pendente** (planejado no dbt)  
-6) Airflow: orquestrar pipeline, notificações e retry — **Pendente**  
-7) Visualização: conectar Metabase/Power BI ao PostgreSQL e criar dashboard — **Pendente**
+1. Escolher fonte de dados (API pública) — **Concluído:** Portal da Transparência (despesas/órgãos)
+2. Ingestão Python: consumir API e salvar CSV local — **Concluído:** scripts em `src/ingestion`, saídas em `data/raw`
+3. Camada staging: converter CSV → Parquet em caminho separado — **Concluído:** `src/transformation/stage_despesas_por_orgao.py` → `data/staging`
+4. dbt + PostgreSQL local: criar fatos/dimensões via SQL — **Pendente**
+5. Agregações SQL (GROUP BY, WINDOW) — **Pendente** (planejado no dbt)
+6. Airflow: orquestrar pipeline, notificações e retry — **Pendente**
+7. Visualização: conectar Metabase/Power BI ao PostgreSQL e criar dashboard — **Pendente**
 
 Próximos passos imediatos:
+
 - Iniciar projeto dbt em `dbt/`, definir profile apontando para PostgreSQL local.
 - Modelar staging e marts no dbt (fatos/dimensões) com testes declarativos.
 - Carregar Parquet em PostgreSQL e validar agregações SQL.
@@ -154,16 +155,24 @@ Essas regras servem como base para contratos de dados e testes futuros no dbt.
 
 ## 🚀 Próximos Passos
 
-1. Consolidar regras de qualidade como contratos formais
-2. Criar projeto **dbt**
-3. Modelar camadas **staging** e **marts**
-4. Implementar testes declarativos no dbt
-5. Gerar documentação automática
-6. Carregar dados em banco analítico
-7. Criar consultas SQL analíticas
-8. Explorar visualizações
-9. Orquestrar pipeline com Airflow
-10. Transformar o projeto em **case de portfólio técnico**
+#### Fase 1 — Consolidação técnica
+
+- Consolidar regras de qualidade como contratos formais
+- Criar projeto dbt (adapter DuckDB)
+- Modelar camadas staging e marts
+- Implementar testes declarativos no dbt
+- Gerar documentação automática dos modelos
+
+#### Fase 2 — Análise e consumo
+
+- Estruturar o banco analítico como camada de consumo
+- Criar consultas SQL analíticas (agregações, rankings, métricas)
+- Explorar visualizações (Power BI / Metabase)
+
+#### Fase 3 — Automação e maturidade
+
+- Orquestrar o pipeline com Airflow
+- Transformar o projeto em case de portfólio técnico
 
 ---
 
