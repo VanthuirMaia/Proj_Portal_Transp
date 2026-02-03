@@ -1,0 +1,19 @@
+name: "portal_transp_dbt"
+version: "1.0.0"
+profile: "portal_transp_dbt"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  portal_transp_dbt:
+    staging:
+      +materialized: table

@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: staging_despesas_por_orgao
+
+models:
+  - name: stg_despesas_por_orgao
+    columns:
+      - name: ano
+        tests:
+          - not_null
+
+      - name: codigo_orgao
+        tests:
+          - not_null
+
+      - name: valor_empenhado
+        tests:
+          - not_null
