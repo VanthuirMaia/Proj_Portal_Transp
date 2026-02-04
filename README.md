@@ -84,7 +84,7 @@ Os dados utilizados são os mesmos disponibilizados publicamente no portal, aces
 - PyArrow (Parquet)
 - DuckDB (warehouse analítico)
 - dotenv
-- dbt (próxima etapa)
+- dbt-duckdb (transformação e testes)
 - Airflow (planejado)
 
 ---
@@ -100,7 +100,7 @@ Os dados utilizados são os mesmos disponibilizados publicamente no portal, aces
 | 5 | Warehouse DuckDB: inicializar e carregar staging | ✅ Concluído |
 | 6 | Queries analíticas SQL (agregações, rankings) | ✅ Concluído |
 | 7 | Views analíticas no DuckDB | ✅ Concluído |
-| 8 | Projeto dbt com testes e documentação | 🔲 Pendente |
+| 8 | Projeto dbt com testes e documentação | ✅ Concluído |
 | 9 | Visualização (Power BI / Metabase) | 🔲 Pendente |
 | 10 | Orquestração com Airflow | 🔲 Pendente |
 
@@ -132,6 +132,17 @@ Os dados utilizados são os mesmos disponibilizados publicamente no portal, aces
 - Staging carregado no DuckDB
 - Queries analíticas: totais e rankings por órgão
 - View analítica `vw_ranking_orgaos` criada
+
+### dbt (`portal_transp_dbt/`)
+- Projeto dbt inicializado com adapter DuckDB
+- Source declarada: `staging_despesas_por_orgao`
+- Modelo staging: `stg_despesas_por_orgao` com regras de qualidade
+- Testes automatizados: `not_null` para colunas críticas
+- Modelagem dimensional (Star Schema):
+  - `dim_orgaos`: dimensão de órgãos com chave substituta
+  - `fct_despesas`: fato de despesas com métricas financeiras
+- Documentação automática com lineage graph
+- Orquestração automática de dependências entre modelos
 
 ---
 
@@ -167,14 +178,14 @@ Essas regras servem como base para contratos de dados e testes futuros no dbt.
 
 ## 🚀 Próximos Passos
 
-### Fase 1 — dbt (próximo)
+### Fase 1 — dbt (concluído)
 
-- [ ] Criar projeto dbt em `dbt/` com adapter DuckDB
-- [ ] Configurar `profiles.yml` apontando para o warehouse
-- [ ] Modelar staging (`stg_despesas_por_orgao`) no dbt
-- [ ] Criar marts/dimensões (ex: `dim_orgaos`, `fct_despesas`)
-- [ ] Implementar testes declarativos (`unique`, `not_null`, `relationships`)
-- [ ] Gerar documentação automática (`dbt docs generate`)
+- [x] Criar projeto dbt em `dbt/` com adapter DuckDB
+- [x] Configurar `profiles.yml` apontando para o warehouse
+- [x] Modelar staging (`stg_despesas_por_orgao`) no dbt
+- [x] Criar marts/dimensões (ex: `dim_orgaos`, `fct_despesas`)
+- [x] Implementar testes declarativos (`unique`, `not_null`, `relationships`)
+- [x] Gerar documentação automática (`dbt docs generate`)
 
 ### Fase 2 — Visualização
 

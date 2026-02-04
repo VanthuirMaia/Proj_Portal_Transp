@@ -35,32 +35,41 @@ def fetch_page(ano: int, orgao_superior: str, pagina: int):
 
 
 def main():
-    ano = 2023
-    orgao_superior = "26000"  # ajuste com um código REAL
-    pagina = 1
-    all_data = []
+    # Lista de anos pra buscar
+    anos = [2020, 2021, 2022, 2023, 2024]
+    orgao_superior = "26000"
+    
+    for ano in anos:
+        print(f"\n{'='*50}")
+        print(f"Buscando dados do ano {ano}")
+        print(f"{'='*50}\n")
+        
+        pagina = 1
+        all_data = []
 
-    while True:
-        print(f"Ano {ano} | Órgão {orgao_superior} | Página {pagina}")
-        data = fetch_page(ano, orgao_superior, pagina)
+        while True:
+            print(f"Ano {ano} | Órgão {orgao_superior} | Página {pagina}")
+            try:
+                data = fetch_page(ano, orgao_superior, pagina)
 
-        if not data:
-            break
+                if not data:
+                    break
 
-        all_data.extend(data)
-        pagina += 1
-        time.sleep(0.3)
+                all_data.extend(data)
+                pagina += 1
+                time.sleep(0.3)
+            except Exception as e:
+                print(f"Erro na página {pagina}: {e}")
+                break
 
-    df = pd.DataFrame(all_data)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = f"data/raw/despesas_{orgao_superior}_{ano}_{timestamp}.csv"
-
-    df.to_csv(output_path, index=False, encoding="utf-8")
-
-    print(f"Arquivo salvo em {output_path}")
-    print(f"Registros: {len(df)}")
-
+        if all_data:
+            df = pd.DataFrame(all_data)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = f"data/raw/despesas_{orgao_superior}_{ano}_{timestamp}.csv"
+            df.to_csv(output_path, index=False, encoding="utf-8")
+            print(f"✅ Arquivo salvo: {output_path} | Registros: {len(df)}")
+        else:
+            print(f"⚠️  Nenhum dado encontrado para {ano}")
 
 if __name__ == "__main__":
     main()
