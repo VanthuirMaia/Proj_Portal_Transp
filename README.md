@@ -1,221 +1,369 @@
-# PROJ_PORTAL_TRANSP
+# Portal da Transparência - Data Pipeline
 
-**Projeto prático de Engenharia de Dados com dados públicos reais**
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
+[![dbt](https://img.shields.io/badge/dbt-1.11-FF694B?style=flat&logo=dbt&logoColor=white)](https://getdbt.com)
+[![DuckDB](https://img.shields.io/badge/DuckDB-1.4-FEF000?style=flat&logo=duckdb&logoColor=black)](https://duckdb.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.53-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
----
+Pipeline completo de Engenharia de Dados que consome, transforma e analisa dados reais de despesas públicas do **Portal da Transparência do Governo Federal Brasileiro**.
 
-## 📌 Visão Geral
-
-Este projeto foi criado com o objetivo de **aprender Engenharia de Dados de forma prática**, utilizando **dados reais do Portal da Transparência do Governo Federal**, enfrentando problemas reais de qualidade, padronização, volume e integração.
-
-O foco não é apenas consumir dados, mas **construir um pipeline completo**, bem estruturado, versionável e evolutivo, seguindo boas práticas utilizadas em ambientes profissionais.
-
-> Aprendizado baseado em **projeto**, não em exemplos artificiais.
+![Pipeline Architecture](<https://img.shields.io/badge/Architecture-Medallion_(Bronze→Silver→Gold)-blue?style=for-the-badge>)
 
 ---
 
-## 🎯 Objetivos do Projeto
+## Sobre o Projeto
 
-- Consumir APIs públicas reais com autenticação e paginação
-- Implementar camadas de dados (**RAW → STAGING → ANALYTICS**)
-- Tratar dados inconsistentes e sem contrato
-- Aplicar regras de **qualidade de dados**
-- Evoluir para modelagem dimensional
-- Utilizar **dbt** para transformação, testes e documentação
-- Preparar o pipeline para orquestração com **Airflow**
-- Consolidar o projeto como **case técnico de portfólio**
+Este projeto implementa um **pipeline de dados end-to-end** utilizando dados reais da API do Portal da Transparência. O objetivo é demonstrar habilidades práticas em Engenharia de Dados através de um caso de uso real, enfrentando desafios genuínos de qualidade, padronização e integração de dados.
+
+### Destaques
+
+- **Dados Reais**: Consumo de APIs públicas com autenticação e paginação
+- **Arquitetura Medallion**: Camadas Bronze (Raw), Silver (Staging) e Gold (Analytics)
+- **Modelagem Dimensional**: Star Schema com dbt (dimensões e fatos)
+- **Qualidade de Dados**: Validações automatizadas em múltiplas camadas
+- **Dashboard Interativo**: Visualizações em tempo real com Streamlit
 
 ---
 
-## 🗂️ Estrutura de Pastas
+## Arquitetura
 
 ```
-PROJ_PORTAL_TRANSP/
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           PIPELINE DE DADOS                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐
+    │   API REST   │   Portal da Transparência
+    │   (Fonte)    │   api.portaldatransparencia.gov.br
+    └──────┬───────┘
+           │
+           ▼
+┌─────────────────────┐
+│   1. INGESTÃO       │   Python + Requests
+│   ─────────────     │   • Autenticação por API Key
+│   src/ingestion/    │   • Paginação automática
+│                     │   • Rate limiting (0.3s)
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   2. RAW (Bronze)   │   CSV com timestamp
+│   ─────────────     │   • Dados brutos
+│   data/raw/         │   • Audit trail
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   3. STAGING        │   Parquet + Validações
+│   (Silver)          │   • Tipagem explícita
+│   ─────────────     │   • Normalização monetária
+│   data/staging/     │   • Quality checks
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   4. WAREHOUSE      │   DuckDB
+│   ─────────────     │   • OLAP columnar
+│   data/warehouse/   │   • SQL analytics
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   5. TRANSFORM      │   dbt + Star Schema
+│   (Gold)            │   ├── stg_despesas_por_orgao
+│   ─────────────     │   ├── dim_orgaos
+│   portal_transp_dbt │   └── fct_despesas
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   6. DASHBOARD      │   Streamlit + Plotly
+│   ─────────────     │   • KPIs interativos
+│   dashboard/        │   • Visualizações
+└─────────────────────┘
+```
+
+---
+
+## Stack Tecnológica
+
+| Camada            | Tecnologia        | Propósito                         |
+| ----------------- | ----------------- | --------------------------------- |
+| **Ingestão**      | Python, Requests  | Consumo de API REST com paginação |
+| **Armazenamento** | Parquet, DuckDB   | Formatos colunares otimizados     |
+| **Transformação** | dbt, Pandas       | Modelagem dimensional e ETL       |
+| **Qualidade**     | dbt tests, Python | Validações e contratos de dados   |
+| **Visualização**  | Streamlit, Plotly | Dashboard interativo              |
+| **Versionamento** | Git               | Controle de versão                |
+
+---
+
+## Estrutura do Projeto
+
+```
+portal-transparencia-pipeline/
 │
 ├── data/
-│   ├── raw/            # Dados brutos extraídos da API (CSV com timestamp)
-│   ├── staging/        # Dados tratados e tipados (Parquet)
-│   ├── warehouse/      # Banco DuckDB com dados carregados
-│   └── analytics/      # Dados prontos para análise (Gold Layer)
+│   ├── raw/                    # Bronze: CSVs brutos da API
+│   ├── staging/                # Silver: Parquet tratados
+│   ├── warehouse/              # DuckDB database
+│   └── analytics/              # Gold: Dados agregados
 │
 ├── src/
-│   ├── ingestion/      # Scripts de ingestão (API → RAW)
-│   ├── transformation/ # Scripts de transformação (RAW → STAGING)
-│   ├── quality/        # Regras e validações de qualidade de dados
-│   └── utils/          # Funções utilitárias
+│   ├── ingestion/              # Scripts de ingestão
+│   │   ├── fetch_orgaos_siafi.py
+│   │   └── fetch_despesas_por_orgao.py
+│   │
+│   ├── transformation/         # ETL: Raw → Staging
+│   │   └── stage_despesas_por_orgao.py
+│   │
+│   └── quality/                # Validações de qualidade
+│       └── check_despesas_por_orgao.py
 │
-├── scripts/            # Scripts DuckDB (queries, views, carga)
-├── dbt/                # Projeto dbt (modelagem, testes, docs)
-├── airflow/            # Orquestração (planejado)
-├── notebooks/          # Análises exploratórias e validações
+├── portal_transp_dbt/          # Projeto dbt
+│   ├── models/
+│   │   ├── staging/
+│   │   │   └── stg_despesas_por_orgao.sql
+│   │   └── marts/
+│   │       ├── dim_orgaos.sql
+│   │       └── fct_despesas.sql
+│   └── tests/
 │
+├── scripts/                    # Utilitários DuckDB
+│   ├── init_duckdb.py
+│   └── load_staging_to_duckdb.py
+│
+├── dashboard/
+│   └── app.py                  # Streamlit dashboard
+│
+├── run_pipeline.py             # Orquestrador principal
 ├── requirements.txt
-├── .env.exemplo
-└── README.md
+└── .env.exemplo
 ```
 
 ---
 
-## 🔌 Fonte de Dados
+## Modelo de Dados
 
-**Portal da Transparência – Governo Federal**
-
-### Endpoint inicial (dimensão)
+### Star Schema
 
 ```
-GET /api-de-dados/orgaos-siafi
+                    ┌─────────────────┐
+                    │   dim_orgaos    │
+                    ├─────────────────┤
+                    │ sk_orgao (PK)   │
+                    │ codigo_orgao    │
+                    │ nome_orgao      │
+                    │ codigo_superior │
+                    │ nome_superior   │
+                    └────────┬────────┘
+                             │
+                             │ 1:N
+                             │
+                    ┌────────▼────────┐
+                    │  fct_despesas   │
+                    ├─────────────────┤
+                    │ sk_orgao (FK)   │
+                    │ ano             │
+                    │ valor_empenhado │
+                    │ valor_liquidado │
+                    │ valor_pago      │
+                    │ carga_timestamp │
+                    └─────────────────┘
 ```
 
-### Endpoint principal (fato)
+### Dicionário de Dados
 
+| Campo             | Tipo    | Descrição                    |
+| ----------------- | ------- | ---------------------------- |
+| `ano`             | INTEGER | Ano fiscal (2020-2024)       |
+| `codigo_orgao`    | VARCHAR | Código SIAFI do órgão        |
+| `orgao`           | VARCHAR | Nome do órgão                |
+| `valor_empenhado` | DOUBLE  | Valor comprometido (R$)      |
+| `valor_liquidado` | DOUBLE  | Valor verificado (R$)        |
+| `valor_pago`      | DOUBLE  | Valor efetivamente pago (R$) |
+
+---
+
+## Qualidade de Dados
+
+O pipeline implementa validações em múltiplas camadas:
+
+### Regras de Negócio
+
+| Regra                     | Descrição                             | Camada  |
+| ------------------------- | ------------------------------------- | ------- |
+| **Valores não negativos** | Todos os campos monetários ≥ 0        | Staging |
+| **Coerência financeira**  | empenhado ≥ liquidado ≥ pago          | Staging |
+| **Unicidade lógica**      | Sem duplicatas em (ano, codigo_orgao) | Staging |
+
+### Testes dbt
+
+```yaml
+# schema.yml
+models:
+  - name: stg_despesas_por_orgao
+    columns:
+      - name: ano
+        tests: [not_null]
+      - name: codigo_orgao
+        tests: [not_null]
+      - name: valor_empenhado
+        tests: [not_null]
+
+  - name: fct_despesas
+    columns:
+      - name: sk_orgao
+        tests:
+          - relationships:
+              to: ref('dim_orgaos')
+              field: sk_orgao
 ```
-GET /api-de-dados/despesas/por-orgao
+
+---
+
+## Como Executar
+
+### Pré-requisitos
+
+- Python 3.12+
+- Chave de API do Portal da Transparência ([solicitar aqui](https://portaldatransparencia.gov.br/api-de-dados))
+
+### Instalação
+
+```bash
+# Clonar repositório
+git clone https://github.com/seu-usuario/portal-transparencia-pipeline.git
+cd portal-transparencia-pipeline
+
+# Criar ambiente virtual
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# Instalar dependências
+pip install -r requirements.txt
+
+# Configurar variáveis de ambiente
+cp .env.exemplo .env
+# Editar .env com sua API_KEY
 ```
 
-Os dados utilizados são os mesmos disponibilizados publicamente no portal, acessados via API REST.
+### Executar Pipeline Completo
+
+```bash
+# Rodar todo o pipeline
+python run_pipeline.py
+```
+
+### Executar Etapas Individuais
+
+```bash
+# 1. Ingestão (API → Raw)
+python src/ingestion/fetch_despesas_por_orgao.py
+
+# 2. Transformação (Raw → Staging)
+python src/transformation/stage_despesas_por_orgao.py
+
+# 3. Carregar no DuckDB
+python scripts/load_staging_to_duckdb.py
+
+# 4. Executar modelos dbt
+cd portal_transp_dbt
+dbt run
+dbt test
+
+# 5. Iniciar dashboard
+streamlit run dashboard/app.py
+```
 
 ---
 
-## ⚙️ Tecnologias Utilizadas
+## Dashboard
 
-- Python 3.12
-- Pandas
-- Requests
-- PyArrow (Parquet)
-- DuckDB (warehouse analítico)
-- dotenv
-- dbt-duckdb (transformação e testes)
-- Airflow (planejado)
+O dashboard interativo exibe:
 
----
+- **KPIs**: Total empenhado, liquidado e pago
+- **Top 10 Órgãos**: Ranking por valor pago
+- **Evolução Temporal**: Série histórica 2020-2024
+- **Filtros**: Por ano e órgão
 
-## 🧭 Roteiro do Projeto (checkpoint)
+```bash
+# Iniciar dashboard
+streamlit run dashboard/app.py
+```
 
-| Etapa | Descrição | Status |
-|-------|-----------|--------|
-| 1 | Escolher fonte de dados (API pública) | ✅ Concluído |
-| 2 | Ingestão Python: consumir API e salvar CSV | ✅ Concluído |
-| 3 | Camada staging: CSV → Parquet | ✅ Concluído |
-| 4 | Regras de qualidade de dados | ✅ Concluído |
-| 5 | Warehouse DuckDB: inicializar e carregar staging | ✅ Concluído |
-| 6 | Queries analíticas SQL (agregações, rankings) | ✅ Concluído |
-| 7 | Views analíticas no DuckDB | ✅ Concluído |
-| 8 | Projeto dbt com testes e documentação | ✅ Concluído |
-| 9 | Visualização (Power BI / Metabase) | 🔲 Pendente |
-| 10 | Orquestração com Airflow | 🔲 Pendente |
+Acesse: `http://localhost:8501`
 
 ---
 
-## ✅ O que já foi implementado
+## API de Dados
 
-### Infraestrutura
-- Estrutura de pastas organizada e versionada
-- Configuração segura de variáveis de ambiente (`.env.exemplo`)
+### Endpoints Utilizados
 
-### Ingestão (`src/ingestion/`)
-- Consumo paginado de APIs públicas
-- Scripts: `fetch_orgaos_siafi.py`, `fetch_despesas_por_orgao.py`
-- Camada **RAW** com versionamento por timestamp
+| Endpoint                               | Descrição                    |
+| -------------------------------------- | ---------------------------- |
+| `GET /api-de-dados/orgaos-siafi`       | Lista de órgãos SIAFI        |
+| `GET /api-de-dados/despesas/por-orgao` | Despesas agregadas por órgão |
 
-### Transformação (`src/transformation/`)
-- Tipagem explícita e normalização de valores monetários
-- Conversão CSV → Parquet
-- Saída em `data/staging/`
+### Autenticação
 
-### Qualidade (`src/quality/`)
-- Validação de valores não negativos
-- Coerência financeira: `empenhado ≥ liquidado ≥ pago`
-- Unicidade lógica por `(ano, codigo_orgao)`
-
-### Warehouse DuckDB (`scripts/`)
-- Banco inicializado em `data/warehouse/portal_transparencia.duckdb`
-- Staging carregado no DuckDB
-- Queries analíticas: totais e rankings por órgão
-- View analítica `vw_ranking_orgaos` criada
-
-### dbt (`portal_transp_dbt/`)
-- Projeto dbt inicializado com adapter DuckDB
-- Source declarada: `staging_despesas_por_orgao`
-- Modelo staging: `stg_despesas_por_orgao` com regras de qualidade
-- Testes automatizados: `not_null` para colunas críticas
-- Modelagem dimensional (Star Schema):
-  - `dim_orgaos`: dimensão de órgãos com chave substituta
-  - `fct_despesas`: fato de despesas com métricas financeiras
-- Documentação automática com lineage graph
-- Orquestração automática de dependências entre modelos
+```python
+headers = {
+    "chave-api-dados": os.getenv("API_KEY"),
+    "User-Agent": "data-engineering-study"
+}
+```
 
 ---
 
-## 📊 Dataset Atual (STAGING)
+## Roadmap
 
-Tabela: `stg_despesas_por_orgao`
-
-| Campo                 | Tipo      |
-| --------------------- | --------- |
-| ano                   | int       |
-| codigo_orgao          | string    |
-| orgao                 | string    |
-| codigo_orgao_superior | string    |
-| orgao_superior        | string    |
-| valor_empenhado       | float     |
-| valor_liquidado       | float     |
-| valor_pago            | float     |
-| carga_timestamp       | timestamp |
+- [x] Ingestão de dados via API
+- [x] Camada Raw (Bronze)
+- [x] Camada Staging (Silver) com Parquet
+- [x] Validações de qualidade
+- [x] Warehouse DuckDB
+- [x] Modelagem dimensional com dbt
+- [x] Testes automatizados
+- [x] Dashboard Streamlit
+- [ ] Orquestração com Airflow
+- [ ] CI/CD pipeline
+- [ ] Documentação dbt Docs
 
 ---
 
-## 🧪 Qualidade de Dados
+## Aprendizados
 
-Regras implementadas:
+Este projeto demonstra competências práticas em:
 
-- Valores monetários não negativos
-- Coerência financeira entre empenhado, liquidado e pago
-- Unicidade lógica por `(ano, codigo_orgao)`
-
-Essas regras servem como base para contratos de dados e testes futuros no dbt.
-
----
-
-## 🚀 Próximos Passos
-
-### Fase 1 — dbt (concluído)
-
-- [x] Criar projeto dbt em `dbt/` com adapter DuckDB
-- [x] Configurar `profiles.yml` apontando para o warehouse
-- [x] Modelar staging (`stg_despesas_por_orgao`) no dbt
-- [x] Criar marts/dimensões (ex: `dim_orgaos`, `fct_despesas`)
-- [x] Implementar testes declarativos (`unique`, `not_null`, `relationships`)
-- [x] Gerar documentação automática (`dbt docs generate`)
-
-### Fase 2 — Visualização
-
-- [ ] Conectar Power BI ou Metabase ao DuckDB
-- [ ] Criar dashboard com métricas de despesas
-- [ ] Explorar séries temporais e comparativos
-
-### Fase 3 — Automação
-
-- [ ] Criar DAG no Airflow para orquestrar o pipeline
-- [ ] Implementar alertas e retry em caso de falha
-- [ ] Documentar o projeto como case de portfólio
+- **Data Engineering**: Construção de pipelines ETL/ELT robustos
+- **Data Modeling**: Modelagem dimensional (Star Schema)
+- **Data Quality**: Implementação de validações e contratos
+- **Modern Data Stack**: dbt, DuckDB, Streamlit
+- **API Integration**: Consumo de APIs REST com autenticação
+- **Best Practices**: Código limpo, versionamento, documentação
 
 ---
 
-## 📌 Filosofia do Projeto
+## Licença
 
-Este projeto segue uma abordagem **realista**:
-
-- Dados reais são imperfeitos
-- APIs falham
-- Ambientes quebram
-- Qualidade precisa ser explícita
-- Engenharia vem antes de dashboards
-
-> O objetivo não é apenas fazer funcionar,  
-> é **entender, justificar e sustentar cada decisão técnica**.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ---
 
-## ✍️ Autor
+## Autor
 
-Projeto desenvolvido para estudo e aprofundamento em **Engenharia de Dados**, com foco em aprendizado contínuo baseado em projetos reais.
+Desenvolvido como projeto de portfólio em **Engenharia de Dados**.
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/vanthuir-maia-47767810b/)
+[![GitHub](https://img.shields.io/badge/GitHub-Follow-black?style=flat&logo=github)](https://github.com/VanthuirMaia)
+[![Email](https://img.shields.io/badge/Email-vanmaiasf@gmail.com-red?style=flat&logo=gmail&logoColor=white)](mailto:vanmaiasf@gmail.com)
+[![Email](https://img.shields.io/badge/Dev-vanthuir.dev@gmail.com-orange?style=flat&logo=gmail&logoColor=white)](mailto:vanthuir.dev@gmail.com)
+
+---
+
+<p align="center">
+  <i>Dados reais. Problemas reais. Soluções profissionais.</i>
+</p>
