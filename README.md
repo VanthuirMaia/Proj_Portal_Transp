@@ -33,8 +33,9 @@ O foco não é apenas consumir dados, mas **construir um pipeline completo**, be
 PROJ_PORTAL_TRANSP/
 │
 ├── data/
-│   ├── raw/            # Dados brutos extraídos da API (imutáveis)
-│   ├── staging/        # Dados tratados e tipados (Silver Layer)
+│   ├── raw/            # Dados brutos extraídos da API (CSV com timestamp)
+│   ├── staging/        # Dados tratados e tipados (Parquet)
+│   ├── warehouse/      # Banco DuckDB com dados carregados
 │   └── analytics/      # Dados prontos para análise (Gold Layer)
 │
 ├── src/
@@ -43,6 +44,7 @@ PROJ_PORTAL_TRANSP/
 │   ├── quality/        # Regras e validações de qualidade de dados
 │   └── utils/          # Funções utilitárias
 │
+├── scripts/            # Scripts DuckDB (queries, views, carga)
 ├── dbt/                # Projeto dbt (modelagem, testes, docs)
 ├── airflow/            # Orquestração (planejado)
 ├── notebooks/          # Análises exploratórias e validações
@@ -80,46 +82,56 @@ Os dados utilizados são os mesmos disponibilizados publicamente no portal, aces
 - Pandas
 - Requests
 - PyArrow (Parquet)
+- DuckDB (warehouse analítico)
 - dotenv
-- dbt (planejado)
-- PostgreSQL / DuckDB (planejado)
+- dbt (próxima etapa)
 - Airflow (planejado)
 
 ---
 
 ## 🧭 Roteiro do Projeto (checkpoint)
 
-1. Escolher fonte de dados (API pública) — **Concluído:** Portal da Transparência (despesas/órgãos)
-2. Ingestão Python: consumir API e salvar CSV local — **Concluído:** scripts em `src/ingestion`, saídas em `data/raw`
-3. Camada staging: converter CSV → Parquet em caminho separado — **Concluído:** `src/transformation/stage_despesas_por_orgao.py` → `data/staging`
-4. dbt + PostgreSQL local: criar fatos/dimensões via SQL — **Pendente**
-5. Agregações SQL (GROUP BY, WINDOW) — **Pendente** (planejado no dbt)
-6. Airflow: orquestrar pipeline, notificações e retry — **Pendente**
-7. Visualização: conectar Metabase/Power BI ao PostgreSQL e criar dashboard — **Pendente**
-
-Próximos passos imediatos:
-
-- Iniciar projeto dbt em `dbt/`, definir profile apontando para PostgreSQL local.
-- Modelar staging e marts no dbt (fatos/dimensões) com testes declarativos.
-- Carregar Parquet em PostgreSQL e validar agregações SQL.
-- Preparar DAG no Airflow para orquestrar ingestão, staging, dbt e alertas.
+| Etapa | Descrição | Status |
+|-------|-----------|--------|
+| 1 | Escolher fonte de dados (API pública) | ✅ Concluído |
+| 2 | Ingestão Python: consumir API e salvar CSV | ✅ Concluído |
+| 3 | Camada staging: CSV → Parquet | ✅ Concluído |
+| 4 | Regras de qualidade de dados | ✅ Concluído |
+| 5 | Warehouse DuckDB: inicializar e carregar staging | ✅ Concluído |
+| 6 | Queries analíticas SQL (agregações, rankings) | ✅ Concluído |
+| 7 | Views analíticas no DuckDB | ✅ Concluído |
+| 8 | Projeto dbt com testes e documentação | 🔲 Pendente |
+| 9 | Visualização (Power BI / Metabase) | 🔲 Pendente |
+| 10 | Orquestração com Airflow | 🔲 Pendente |
 
 ---
 
 ## ✅ O que já foi implementado
 
+### Infraestrutura
 - Estrutura de pastas organizada e versionada
 - Configuração segura de variáveis de ambiente (`.env.exemplo`)
-- Ingestão paginada de dados via API pública
+
+### Ingestão (`src/ingestion/`)
+- Consumo paginado de APIs públicas
+- Scripts: `fetch_orgaos_siafi.py`, `fetch_despesas_por_orgao.py`
 - Camada **RAW** com versionamento por timestamp
-- Transformação para **STAGING (Silver Layer)**:
-  - Tipagem explícita
-  - Normalização de valores monetários inconsistentes
-  - Conversão para formato **Parquet**
-- Criação de regras iniciais de **qualidade de dados**
-- Validação de coerência financeira:
-  - `empenhado ≥ liquidado ≥ pago`
-- Separação clara entre **dimensões** e **fatos**
+
+### Transformação (`src/transformation/`)
+- Tipagem explícita e normalização de valores monetários
+- Conversão CSV → Parquet
+- Saída em `data/staging/`
+
+### Qualidade (`src/quality/`)
+- Validação de valores não negativos
+- Coerência financeira: `empenhado ≥ liquidado ≥ pago`
+- Unicidade lógica por `(ano, codigo_orgao)`
+
+### Warehouse DuckDB (`scripts/`)
+- Banco inicializado em `data/warehouse/portal_transparencia.duckdb`
+- Staging carregado no DuckDB
+- Queries analíticas: totais e rankings por órgão
+- View analítica `vw_ranking_orgaos` criada
 
 ---
 
@@ -155,24 +167,26 @@ Essas regras servem como base para contratos de dados e testes futuros no dbt.
 
 ## 🚀 Próximos Passos
 
-#### Fase 1 — Consolidação técnica
+### Fase 1 — dbt (próximo)
 
-- Consolidar regras de qualidade como contratos formais
-- Criar projeto dbt (adapter DuckDB)
-- Modelar camadas staging e marts
-- Implementar testes declarativos no dbt
-- Gerar documentação automática dos modelos
+- [ ] Criar projeto dbt em `dbt/` com adapter DuckDB
+- [ ] Configurar `profiles.yml` apontando para o warehouse
+- [ ] Modelar staging (`stg_despesas_por_orgao`) no dbt
+- [ ] Criar marts/dimensões (ex: `dim_orgaos`, `fct_despesas`)
+- [ ] Implementar testes declarativos (`unique`, `not_null`, `relationships`)
+- [ ] Gerar documentação automática (`dbt docs generate`)
 
-#### Fase 2 — Análise e consumo
+### Fase 2 — Visualização
 
-- Estruturar o banco analítico como camada de consumo
-- Criar consultas SQL analíticas (agregações, rankings, métricas)
-- Explorar visualizações (Power BI / Metabase)
+- [ ] Conectar Power BI ou Metabase ao DuckDB
+- [ ] Criar dashboard com métricas de despesas
+- [ ] Explorar séries temporais e comparativos
 
-#### Fase 3 — Automação e maturidade
+### Fase 3 — Automação
 
-- Orquestrar o pipeline com Airflow
-- Transformar o projeto em case de portfólio técnico
+- [ ] Criar DAG no Airflow para orquestrar o pipeline
+- [ ] Implementar alertas e retry em caso de falha
+- [ ] Documentar o projeto como case de portfólio
 
 ---
 
