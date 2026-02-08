@@ -88,21 +88,36 @@ Este projeto implementa um **pipeline de dados end-to-end** utilizando dados rea
 
 ## Stack Tecnológica
 
-| Camada            | Tecnologia        | Propósito                         |
-| ----------------- | ----------------- | --------------------------------- |
-| **Ingestão**      | Python, Requests  | Consumo de API REST com paginação |
-| **Armazenamento** | Parquet, DuckDB   | Formatos colunares otimizados     |
-| **Transformação** | dbt, Pandas       | Modelagem dimensional e ETL       |
-| **Qualidade**     | dbt tests, Python | Validações e contratos de dados   |
-| **Visualização**  | Streamlit, Plotly | Dashboard interativo              |
-| **Versionamento** | Git               | Controle de versão                |
+| Camada            | Tecnologia                  | Propósito                         |
+| ----------------- | --------------------------- | --------------------------------- |
+| **Ingestão**      | Python, Requests            | Consumo de API REST com paginação |
+| **Armazenamento** | Parquet, DuckDB             | Formatos colunares otimizados     |
+| **Transformação** | dbt, Pandas                 | Modelagem dimensional e ETL       |
+| **Qualidade**     | dbt tests, Python           | Validações e contratos de dados   |
+| **Orquestração**  | Apache Airflow 2.10.4       | Orquestração de workflows         |
+| **Containers**    | Docker & Docker Compose     | Containerização                   |
+| **Visualização**  | Streamlit, Plotly           | Dashboard interativo              |
+| **Versionamento** | Git                         | Controle de versão                |
 
 ---
 
 ## Estrutura do Projeto
 
 ```
-portal-transparencia-pipeline/
+PROJ_PORTAL_TRANSP/
+│
+├── docker/
+│   ├── Dockerfile.ingestion
+│   ├── Dockerfile.transformation
+│   ├── Dockerfile.load
+│   └── Dockerfile.dbt
+│
+├── airflow/
+│   ├── dags/
+│   ├── logs/
+│   └── plugins/
+│
+├── docker-compose.yml
 │
 ├── data/
 │   ├── raw/                    # Bronze: CSVs brutos da API
@@ -320,17 +335,76 @@ headers = {
 
 ## Roadmap
 
-- [x] Ingestão de dados via API
-- [x] Camada Raw (Bronze)
-- [x] Camada Staging (Silver) com Parquet
-- [x] Validações de qualidade
-- [x] Warehouse DuckDB
-- [x] Modelagem dimensional com dbt
-- [x] Testes automatizados
-- [x] Dashboard Streamlit
-- [ ] Orquestração com Airflow
-- [ ] CI/CD pipeline
-- [ ] Documentação dbt Docs
+| #  | Etapa                        | Status        |
+|----|------------------------------|---------------|
+| 1  | Ingestão de dados via API    | ✅ Concluído  |
+| 2  | Camada Raw (Bronze)          | ✅ Concluído  |
+| 3  | Camada Staging (Silver)      | ✅ Concluído  |
+| 4  | Validações de qualidade      | ✅ Concluído  |
+| 5  | Warehouse DuckDB             | ✅ Concluído  |
+| 6  | Modelagem dimensional (dbt)  | ✅ Concluído  |
+| 7  | Testes automatizados         | ✅ Concluído  |
+| 8  | Dashboard Streamlit          | ✅ Concluído  |
+| 9  | CI/CD pipeline               | 🔲 Pendente   |
+| 10 | Orquestração com Airflow     | ✅ Concluído  |
+| 11 | Documentação dbt Docs        | 🔲 Pendente   |
+
+---
+
+## O que já foi implementado
+
+### Orquestração com Airflow (`airflow/`, `docker/`)
+- Airflow configurado via Docker Compose (webserver + scheduler + postgres)
+- Dockerfiles isolados para cada etapa do pipeline:
+  - `Dockerfile.ingestion`: Container para ingestão via API
+  - `Dockerfile.transformation`: Container para transformação CSV → Parquet
+  - `Dockerfile.load`: Container para carga no DuckDB
+  - `Dockerfile.dbt`: Container para modelagem e testes dbt
+- DAG `portal_transparencia_pipeline` implementada com DockerOperator
+- Cada task executa em container isolado (sem conflitos de dependências)
+- Retry automático configurado (2 tentativas, 5 minutos de delay)
+- Logs estruturados e rastreabilidade completa de execuções
+- Schedule semanal (`@weekly`) com possibilidade de execução manual
+- Arquitetura production-ready e cross-platform
+
+---
+
+## Próximos Passos
+
+- [ ] Deploy do Airflow em ambiente produtivo (Kubernetes ou cloud managed)
+- [ ] Implementar alertas via email/Slack em caso de falhas
+- [ ] Expandir ingestão para outros órgãos e categorias de despesas
+- [ ] Adicionar testes de integração end-to-end
+- [ ] Criar dashboard executivo com métricas de pipeline (SLA, data freshness)
+
+---
+
+## 🐳 Como Executar o Projeto
+
+### Pré-requisitos
+- Docker Desktop instalado
+- Git
+
+### Executar Pipeline Completo com Airflow
+
+1. Clone o repositório
+2. Navegue até a pasta do projeto
+3. Suba os containers: `docker-compose up -d`
+4. Acesse o Airflow: http://localhost:8080 (usuário: admin, senha: admin1234)
+5. Ative e execute a DAG `portal_transparencia_pipeline`
+
+### Visualizar Dashboard
+```bash
+cd dashboard
+streamlit run app.py
+```
+
+Acesse: http://localhost:8501
+
+### Parar os serviços
+```bash
+docker-compose down
+```
 
 ---
 
