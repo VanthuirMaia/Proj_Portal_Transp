@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Instalar dbt-duckdb
+RUN pip install --no-cache-dir dbt-duckdb==1.10.0
+
+# Criar diretório .dbt
+RUN mkdir -p /root/.dbt
+
+# Copiar projeto dbt e dados
+COPY portal_transp_dbt/ ./portal_transp_dbt/
+COPY data/ ./data/
+
+# Criar profiles.yml dentro do container
+RUN echo "portal_transp_dbt:\n\
+  target: dev\n\
+  outputs:\n\
+    dev:\n\
+      type: duckdb\n\
+      path: /app/data/warehouse/portal_transparencia.duckdb\n\
+      threads: 4" > /root/.dbt/profiles.yml
+
+WORKDIR /app/portal_transp_dbt
+
+CMD ["dbt", "run"]

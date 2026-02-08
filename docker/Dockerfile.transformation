@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Instalar dependências
+RUN pip install --no-cache-dir pandas pyarrow
+
+# Copiar código
+COPY src/transformation/ ./src/transformation/
+COPY data/ ./data/
+
+CMD ["python", "src/transformation/stage_despesas_por_orgao.py"]
